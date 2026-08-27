@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>道牍 · 线上版</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f5f2; --card: #ffffff; --ink: #262a27; --ink-soft: #7c817c;
+    --line: #e2e4df; --accent: #2e5445; --accent-light: #5f8f76; --accent-deep: #1f4033; --accent-bright: #3f8a63;
+    --accent-soft: #e7eee8; --ok: #4a7a63; --danger: #a04b4b; --radius: 14px;
+    --shadow: 0 4px 18px rgba(40, 50, 45, .07);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(160deg, var(--bg) 0%, #e9ece7 100%);
+    color: var(--ink); line-height: 1.7;
+  }
+  .app { max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo-svg { width: 42px; height: 42px; display: block; }
+  .brand h1 { font-family: "隶书", "LiSu", "华文隶书", "STLiti", serif; font-size: 26px; letter-spacing: 2px; }
+  .sub { color: var(--ink-soft); font-size: 13px; }
+  .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .user-bar { display: flex; align-items: center; gap: 8px; }
+  .user-chip { font-size: 14px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 4px 12px; border-radius: 20px; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px; text-align: center; min-width: 74px; box-shadow: var(--shadow); }
+  .stat b { display: block; font-size: 20px; color: var(--accent-bright); }
+  .stat span { font-size: 12px; color: var(--ink-soft); }
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+  .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+  .side-nav { width: 150px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 18px; }
+  .nav-btn { font: inherit; font-size: 14px; text-align: left; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); cursor: pointer; transition: all .15s; box-shadow: var(--shadow); }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.active { background: linear-gradient(135deg, var(--accent-light), var(--accent)); border-color: var(--accent); color: #fff; }
+  @media (max-width: 700px) {
+    .layout { flex-direction: column; }
+    .side-nav { width: 100%; flex-direction: row; overflow-x: auto; position: static; }
+    .nav-btn { flex: 1; text-align: center; white-space: nowrap; }
+  }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+  .card h2 { font-size: 17px; margin-bottom: 12px; }
+  .editor-card .card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .editor-card .card-head h2 { margin-bottom: 0; }
+  input[type="date"] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  .mood-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .label { font-size: 13px; color: var(--ink-soft); }
+  .moods { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mood { font-size: 20px; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: #fff; cursor: pointer; transition: all .15s; }
+  .mood:hover { transform: scale(1.1); border-color: var(--accent); }
+  .mood.selected { background: #dcebe1; border-color: var(--accent); box-shadow: 0 0 0 2px #dcebe1; }
+  #entryText { width: 100%; min-height: 250px; resize: vertical; font: inherit; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); line-height: 1.9; }
+  #entryText:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .editor-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .word-count { font-size: 13px; color: var(--ink-soft); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 14px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; transition: all .15s; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent-light), var(--accent)); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
+  .btn.danger-ghost { color: var(--danger); }
+  .btn.danger-ghost:hover { border-color: var(--danger); }
+  .save-tip { min-height: 20px; font-size: 13px; color: var(--ok); margin-top: 6px; }
+  .yesterday-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--ink-soft); flex-wrap: wrap; }
+  .mini-btn { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; }
+  .mini-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .yesterday-text { white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; background: #f5f6f3; border-radius: 12px; padding: 12px 14px; }
+  .empty { color: var(--ink-soft); font-size: 14px; }
+  .empty-li { color: var(--ink-soft); font-size: 13px; list-style: none; padding: 8px 0; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 13px; padding: 5px 14px; border-radius: 20px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; transition: all .15s; }
+  .tab:hover { color: var(--accent); border-color: var(--accent); }
+  .tab.active { background: linear-gradient(135deg, var(--accent-light), var(--accent)); border-color: var(--accent); color: #fff; }
+  .summary-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+  .points { margin: 4px 0 10px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .points li { font-size: 14px; }
+  .kw { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { font-size: 12px; background: var(--accent-soft); color: var(--accent); padding: 2px 10px; border-radius: 20px; }
+  .sub-label { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+  .mine-ta { width: 100%; min-height: 84px; font: inherit; font-size: 14px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; }
+  .history-wrap { display: flex; gap: 18px; flex-wrap: wrap; }
+  .cal-box { flex: 1 1 340px; max-width: 480px; }
+  .cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cal-head button { font-size: 16px; width: 28px; height: 28px; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; }
+  .cal-head button:hover { border-color: var(--accent); color: var(--accent); }
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; border-radius: 8px; cursor: pointer; position: relative; }
+  .cal-cell:hover { background: var(--accent-soft); }
+  .cal-cell.blank { cursor: default; }
+  .cal-cell.blank:hover { background: transparent; }
+  .cal-head-cell { font-weight: 600; color: var(--ink-soft); cursor: default; }
+  .cal-cell.today { border: 1px solid var(--accent); color: var(--accent); font-weight: 700; }
+  .cal-cell.has-entry { background: #eaf1eb; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); position: absolute; bottom: 4px; }
+  .history-list { list-style: none; max-height: 300px; overflow: auto; display: flex; flex-direction: column; flex: 1 1 260px; }
+  .hist-item { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+  .hist-item:hover { background: #f5f6f3; }
+  .hist-date { font-size: 13px; font-weight: 600; }
+  .hist-preview { font-size: 12px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  footer { margin-top: 22px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .auth-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, var(--bg) 0%, #e9ece7 100%); z-index: 10; padding: 16px; }
+  .auth-card { width: 360px; max-width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 28px 26px; text-align: center; }
+  .auth-logo svg { width: 52px; height: 52px; }
+  .auth-card h1 { font-family: "隶书", "LiSu", "华文隶书", "STLiti", serif; font-size: 24px; letter-spacing: 2px; margin: 6px 0 14px; }
+  #authForm { display: flex; flex-direction: column; gap: 10px; }
+  #authForm input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  #authForm input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .auth-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .auth-import { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+  .auth-tabs { display: flex; gap: 6px; justify-content: flex-end; margin: 0; }
+  .auth-tab { font: inherit; font-size: 12px; padding: 0; border: none; background: none; color: var(--accent); cursor: pointer; }
+  .auth-tab:hover { color: var(--accent-deep); text-decoration: underline; }
+  .auth-tab.active { color: var(--accent); text-decoration: underline; }
+  .auth-error { font-size: 13px; color: var(--danger); min-height: 18px; }
+  .auth-submit { width: 100%; }
+  .modal { position: fixed; inset: 0; background: rgba(40, 50, 45, .35); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+  .modal-card { width: 380px; max-width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .modal-head h2 { margin: 0; font-size: 17px; }
+  .account-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+  .account-row { display: flex; justify-content: space-between; align-items: center; background: #f5f6f3; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .account-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .modal-note { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<!-- Logo 定义（与本地版一致的墨绿竹简） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="dudu-brush" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <linearGradient id="dudu-slip" gradientUnits="userSpaceOnUse" x1="68" y1="0" x2="132" y2="0">
+      <stop offset="0" stop-color="#4A7A63"/>
+      <stop offset="0.5" stop-color="#1B3A2C"/>
+      <stop offset="1" stop-color="#4A7A63"/>
+    </linearGradient>
+  </defs>
+  <symbol id="logo-scroll" viewBox="0 0 200 200">
+    <rect x="72" y="64" width="12.5" height="72" rx="3" fill="url(#dudu-slip)" filter="url(#dudu-brush)"/>
+    <rect x="94" y="48" width="12.5" height="96" rx="3" fill="url(#dudu-slip)" filter="url(#dudu-brush)"/>
+    <rect x="116" y="60" width="12.5" height="70" rx="3" fill="url(#dudu-slip)" filter="url(#dudu-brush)"/>
+  </symbol>
+</svg>
+
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><svg class="logo-svg" viewBox="0 0 200 200"><use href="#logo-scroll"></use></svg></div>
+    <h1>道牍</h1>
+    <form id="authForm" autocomplete="off">
+      <input type="text" id="authName" placeholder="用户名" autocomplete="off">
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password">
+      <div id="authPass2Wrap" style="display:none">
+        <input type="password" id="authPass2" placeholder="确认密码" autocomplete="new-password">
+      </div>
+      <div class="auth-row">
+        <label class="auth-import">
+          <input type="checkbox" id="rememberCheck"> 记住密码
+        </label>
+        <div id="authTabs" class="auth-tabs">
+          <button type="button" class="auth-tab active" data-mode="register">注册</button>
+        </div>
+      </div>
+      <div id="authError" class="auth-error"></div>
+      <button type="submit" id="authSubmit" class="btn primary auth-submit">注册并进入</button>
+    </form>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"><svg class="logo-svg" viewBox="0 0 200 200"><use href="#logo-scroll"></use></svg></div>
+      <div>
+        <h1>道牍</h1>
+        <p class="sub">日日书牍，步步证道</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="user-bar">
+        <span id="currentUser" class="user-chip"></span>
+        <button id="manageBtn" class="btn" style="display:none">账号管理</button>
+        <button id="logoutBtn" class="btn">切换账号</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="statStreak">0</b><span>连续天数</span></div>
+        <div class="stat"><b id="statTotal">0</b><span>日记篇数</span></div>
+        <div class="stat"><b id="statWords">0</b><span>累计字数</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side-nav">
+      <button type="button" id="navYesterday" class="nav-btn active">🕰️ 昨天写了什么</button>
+      <button type="button" id="navHistory" class="nav-btn">📚 历史</button>
+      <button type="button" id="navSummary" class="nav-btn">🧠 自动总结</button>
+    </aside>
+    <div class="main-col">
+    <div class="card editor-card">
+      <div class="card-head"><input type="date" id="dateInput" title="选择日期"></div>
+      <textarea id="entryText" placeholder="写下今天发生的事、想法、收获、计划…（自动保存到云端）"></textarea>
+      <div class="editor-foot">
+        <span id="wordCount" class="word-count">0 字</span>
+        <div class="btns">
+          <button id="saveBtn" class="btn primary">保存</button>
+          <button id="clearBtn" class="btn">清空</button>
+          <button id="deleteBtn" class="btn danger-ghost">删除当天</button>
+        </div>
+      </div>
+      <div id="saveTip" class="save-tip"></div>
+    </div>
+
+    <div class="card yesterday-card" id="secYesterday">
+      <div class="yesterday-head"><h2>🕰️ 昨天写了什么</h2><button id="yesterdayFill" class="mini-btn">补写昨天</button></div>
+      <div id="yesterdayBody"></div>
+    </div>
+
+    <div class="card history-card" id="secHistory" style="display:none">
+      <h2>📚 历史</h2>
+      <div class="history-wrap">
+        <div class="cal-box">
+          <div class="cal-head"><button id="calPrev">‹</button><span id="calTitle"></span><button id="calNext">›</button></div>
+          <div id="calendar" class="calendar"></div>
+        </div>
+        <ul id="historyList" class="history-list"></ul>
+      </div>
+    </div>
+
+    <div class="card summary-card" id="secSummary" style="display:none">
+      <h2>🧠 自动总结</h2>
+      <div id="summaryTabs" class="tabs">
+        <button type="button" class="tab active" data-tab="3d">3天</button>
+        <button type="button" class="tab" data-tab="week">每周</button>
+        <button type="button" class="tab" data-tab="month">每月</button>
+        <button type="button" class="tab" data-tab="all" style="display:none">全体</button>
+      </div>
+      <div id="summaryBody"></div>
+    </div>
+    </div>
+  </main>
+</div>
+
+<div id="manageModal" class="modal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-head"><h2>👑 账号管理</h2><button id="manageClose" class="mini-btn">关闭</button></div>
+    <p class="empty" id="ownerNameLine">当前主人：</p>
+    <p class="empty" id="adminSlotsLine">管理员名额：0 / 5</p>
+    <div id="accountList" class="account-list"></div>
+    <p class="empty modal-note">主人可设置最多 5 名管理员；管理员也能查看"全体"汇总。主人可移除管理员，也可转移主人身份。</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MOODS = ['😀', '🙂', '😐', '😔', '😡', '🤩'];
+  var MAX_ADMINS = 5;
+  var state = { entries: {}, summaries: {} };
+  var currentDate = todayStr();
+  var calYear = null, calMonth = null;
+  var summaryTab = '3d';
+  var authMode = 'register';
+  var currentUser = null, encKey = null, myRole = 'user', myOwner = null;
+  var saveTimer = null, summaryTimer = null;
+  var els = {};
+
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function fmt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayStr() { return fmt(new Date()); }
+  function parse(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return fmt(d); }
+  function dayDiff(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
+  function fmtCN(s) { var p = s.split('-'); return (+p[1]) + '月' + (+p[2]) + '日'; }
+  function nowHM() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function hasText(d) { var e = state.entries[d]; return e && e.text && e.text.trim().length > 0; }
+  function entryDates() { return Object.keys(state.entries).filter(hasText).sort(); }
+  function isPast(ds) { return ds < todayStr(); }
+
+  function mondayOf(ds) { var d = parse(ds); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return fmt(d); }
+  function weekDates(mon) { var a = []; for (var i = 0; i < 7; i++) a.push(addDays(mon, i)); return a; }
+  function weekNum(mon) {
+    var d = parse(mon); var jan1 = new Date(d.getFullYear(), 0, 1);
+    var firstMon = new Date(jan1); firstMon.setDate(jan1.getDate() + ((7 - ((jan1.getDay() + 6) % 7)) % 7));
+    if (d < firstMon) return 1;
+    return Math.floor((d - firstMon) / (7 * 86400000)) + 1;
+  }
+  function monthKey(ds) { return ds.slice(0, 7); }
+  function prevMonthKey(key) { return monthKey(addDays(key + '-01', -1)); }
+  function monthDates(key) {
+    var p = key.split('-'); var y = +p[0], mo = +p[1];
+    var daysIn = new Date(y, mo, 0).getDate(); var a = [];
+    for (var d = 1; d <= daysIn; d++) a.push(y + '-' + pad(mo) + '-' + pad(d));
+    return a;
+  }
+  function monthLabelCN(key) { var p = key.split('-'); return p[0] + '年' + (+p[1]) + '月'; }
+
+  /* ---------- API ---------- */
+  function api(action, body) {
+    return fetch('/api/journal?action=' + encodeURIComponent(action), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    }).then(function (r) { return r.json(); });
+  }
+
+  /* ---------- 加密（与本地版一致：密码派生密钥，AES-GCM） ---------- */
+  function b64(u8) { var b = ''; for (var i = 0; i < u8.length; i++) b += String.fromCharCode(u8[i]); return btoa(b); }
+  function b64ToBytes(s) { var bin = atob(s); var u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return u8; }
+  function deriveKey(password, saltB64, iter) {
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey'])
+      .then(function (base) {
+        return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64ToBytes(saltB64), iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+      });
+  }
+  function randomSalt() { var u8 = new Uint8Array(16); crypto.getRandomValues(u8); return b64(u8); }
+  function encryptData(obj, key) {
+    var iv = new Uint8Array(12); crypto.getRandomValues(iv);
+    return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj)))
+      .then(function (buf) { return 'enc1:' + b64(iv) + ':' + b64(new Uint8Array(buf)); });
+  }
+  function decryptData(blob, key) {
+    var parts = blob.split(':');
+    if (parts.length !== 3 || parts[0] !== 'enc1') return Promise.resolve(null);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(parts[1]) }, key, b64ToBytes(parts[2]))
+      .then(function (buf) { return JSON.parse(new TextDecoder().decode(buf)); })
+      .catch(function () { return null; });
+  }
+
+  /* ---------- 记住密码 ---------- */
+  function loadRemember() { try { return JSON.parse(localStorage.getItem('daodu_web_remember') || '{}'); } catch (e) { return {}; } }
+  function saveRemember(obj) { try { localStorage.setItem('daodu_web_remember', JSON.stringify(obj)); } catch (e) {} }
+
+  /* ---------- 认证 ---------- */
+  function setAuthMode(mode) {
+    authMode = mode;
+    els.authError.textContent = '';
+    if (mode === 'register') {
+      els.authPass2Wrap.style.display = 'block';
+      els.authSubmit.textContent = '注册并进入';
+    } else {
+      els.authPass2Wrap.style.display = 'none';
+      els.authSubmit.textContent = '登录';
+    }
+  }
+  function showAuthError(msg) { els.authError.textContent = msg; }
+  function showAuth() { els.authScreen.style.display = 'flex'; els.appRoot.style.display = 'none'; }
+  function hideAuth() {
+    els.authScreen.style.display = 'none'; els.appRoot.style.display = 'block';
+    els.currentUser.textContent = '👤 ' + currentUser;
+    updateSummaryTabs();
+  }
+
+  function doRegister() {
+    var name = els.authName.value.trim();
+    var pass = els.authPass.value;
+    var pass2 = els.authPass2.value;
+    if (!name || !pass) { showAuthError('请填写用户名和密码'); return; }
+    if (pass.length < 4) { showAuthError('密码至少 4 位'); return; }
+    if (pass !== pass2) { showAuthError('两次输入的密码不一致'); return; }
+    api('register', { username: name, password: pass }).then(function (r) {
+      if (r.error) { showAuthError(r.error); return; }
+      afterAuth(r, pass);
+    });
+  }
+  function doLogin() {
+    var name = els.authName.value.trim();
+    var pass = els.authPass.value;
+    if (!name || !pass) { showAuthError('请填写用户名和密码'); return; }
+    api('login', { username: name, password: pass }).then(function (r) {
+      if (r.error) { showAuthError(r.error); return; }
+      afterAuth(r, pass);
+    });
+  }
+  function afterAuth(r, pass) {
+    try { localStorage.setItem('daodu_web_token', r.token); } catch (e) {}
+    var salt = randomSalt();
+    deriveKey(pass, salt, 100000).then(function (key) {
+      encKey = key;
+      currentUser = r.username;
+      myRole = r.role;
+      var rem = loadRemember();
+      if (els.rememberCheck.checked) saveRemember({ name: currentUser, pass: pass, on: true });
+      else saveRemember({ name: currentUser, on: false });
+      return loadAll();
+    }).then(function () {
+      hideAuth(); renderAll();
+    }).catch(function (e) { showAuthError('初始化失败：' + (e && e.message ? e.message : '未知')); });
+  }
+  function loadAll() {
+    return api('load', { token: sessionToken() }).then(function (r) {
+      if (r.error) { alert(r.error); return; }
+      myRole = r.role; myOwner = r.owner;
+      var entries = r.entries || {};
+      var tasks = Object.keys(entries).map(function (day) {
+        return decryptData(entries[day].payload, encKey).then(function (obj) {
+          if (obj) state.entries[day] = { text: obj.text || '', mood: obj.mood || entries[day].mood || '' };
+        });
+      });
+      return Promise.all(tasks);
+    });
+  }
+  function sessionToken() {
+    try { return localStorage.getItem('daodu_web_token') || ''; } catch (e) { return ''; }
+  }
+
+  function logout() {
+    if (!confirm('退出当前账号？')) return;
+    try { localStorage.removeItem('daodu_web_token'); } catch (e) {}
+    currentUser = null; encKey = null; myRole = 'user'; myOwner = null;
+    state = { entries: {}, summaries: {} };
+    var rem = loadRemember();
+    if (rem.on) saveRemember({ name: rem.name, pass: rem.pass, on: true });
+    setAuthMode('login');
+    renderAll(); showAuth();
+  }
+
+  /* ---------- 保存 ---------- */
+  function persistDay(day) {
+    var e = state.entries[day] || {};
+    var hasText = e.text && e.text.trim();
+    var statsData = hasText ? extractContribution(e.text) : null;
+    return encryptData({ text: e.text || '', mood: e.mood || '' }, encKey).then(function (payload) {
+      return api('save', {
+        token: sessionToken(), day: day, payload: payload, mood: e.mood || '',
+        stats: statsData ? JSON.stringify(statsData) : ''
+      });
+    });
+  }
+  function saveNow() {
+    clearTimeout(saveTimer);
+    var t = els.entryText.value;
+    var e = state.entries[currentDate] || {};
+    if (!t.trim() && !e.mood) { delete state.entries[currentDate]; }
+    else { e.text = t; state.entries[currentDate] = e; }
+    updateWordCount();
+    renderSummary(); renderStats(); renderHistory(); renderCalendar();
+    els.saveTip.textContent = '正在同步…';
+    persistDay(currentDate).then(function (r) {
+      if (r && r.error) { els.saveTip.textContent = '保存失败：' + r.error; }
+      else { els.saveTip.textContent = '已保存 ' + nowHM(); }
+    }).catch(function (err) { els.saveTip.textContent = '保存失败：网络错误'; });
+  }
+  function scheduleSave() {
+    els.saveTip.textContent = '正在保存…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { saveNow(); }, 800);
+    updateWordCount();
+  }
+  function flashTip(msg) { els.saveTip.textContent = msg; setTimeout(function () { els.saveTip.textContent = ''; }, 1500); }
+
+  /* ---------- 渲染 ---------- */
+  function renderAll() {
+    renderEditor(); renderYesterday(); renderSummary(); renderStats(); renderCalendar(); renderHistory();
+  }
+  function renderEditor() {
+    els.dateInput.value = currentDate;
+    var e = state.entries[currentDate] || {};
+    els.entryText.value = e.text || '';
+    updateWordCount(); els.saveTip.textContent = '';
+  }
+  function updateWordCount() { var t = els.entryText.value.trim(); els.wordCount.textContent = (t ? t.length : 0) + ' 字'; }
+  function renderYesterday() {
+    var y = addDays(currentDate, -1);
+    var e = state.entries[y];
+    els.yesterdayBody.innerHTML = '';
+    if (e && hasText(y)) {
+      var head = document.createElement('div'); head.className = 'yesterday-head';
+      var left = document.createElement('span'); left.textContent = (e.mood || '') + ' ' + fmtCN(y);
+      var right = document.createElement('span'); right.textContent = e.text.trim().length + ' 字';
+      head.appendChild(left); head.appendChild(right);
+      var pre = document.createElement('div'); pre.className = 'yesterday-text'; pre.textContent = e.text;
+      els.yesterdayBody.appendChild(head); els.yesterdayBody.appendChild(pre);
+    } else {
+      var p = document.createElement('p'); p.className = 'empty';
+      p.textContent = '昨天（' + fmtCN(y) + '）还没有写日记哦～ 可以点"补写昨天"。';
+      els.yesterdayBody.appendChild(p);
+    }
+  }
+
+  /* ---------- 总结 ---------- */
+  function renderSummary() {
+    if (summaryTab === 'week') { renderSummaryWeek(); return; }
+    if (summaryTab === 'month') { renderSummaryMonth(); return; }
+    if (summaryTab === 'all') { renderSummaryAll(); return; }
+    renderSummary3d();
+  }
+  function buildWindows(dates) {
+    var first = dates[0]; var map = {};
+    dates.forEach(function (d) {
+      var idx = Math.floor(dayDiff(first, d) / 3);
+      if (!map[idx]) {
+        var start = addDays(first, idx * 3);
+        map[idx] = { id: idx, start: start, dates: [start, addDays(start, 1), addDays(start, 2)], present: [false, false, false] };
+      }
+      map[idx].present[dayDiff(first, d) % 3] = true;
+    });
+    return Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) { return b.id - a.id; });
+  }
+  function isComplete(w) { return w.present[0] && w.present[1] && w.present[2]; }
+  function renderSummary3d() {
+    var body = els.summaryBody; body.innerHTML = '';
+    var dates = entryDates();
+    if (!dates.length) { var p0 = document.createElement('p'); p0.className = 'empty'; p0.textContent = '写下第一篇日记后，这里会在每 3 天自动生成关键点总结。'; body.appendChild(p0); return; }
+    var windows = buildWindows(dates); var latestComplete = null;
+    for (var i = 0; i < windows.length; i++) if (isComplete(windows[i])) { latestComplete = windows[i]; break; }
+    if (latestComplete) { renderWindowSummary({ label: fmtCN(latestComplete.dates[0]) + ' → ' + fmtCN(latestComplete.dates[2]), dates: latestComplete.dates, maxPoints: 5 }); return; }
+    var w = windows[0]; var have = w.dates.filter(hasText).length;
+    var p = document.createElement('p'); p.className = 'empty';
+    p.textContent = '当前 3 天窗口（' + fmtCN(w.dates[0]) + ' ~ ' + fmtCN(w.dates[2]) + '）已写 ' + have + '/3 天。写完这 3 天，会自动生成关键点总结。';
+    body.appendChild(p);
+  }
+  function renderSummaryWeek() {
+    var body = els.summaryBody; body.innerHTML = '';
+    var dates = entryDates();
+    if (!dates.length) { var p0 = document.createElement('p'); p0.className = 'empty'; p0.textContent = '写下这一周的日记后，这里会在每周结束后自动生成周总结。'; body.appendChild(p0); return; }
+    var first = dates[0], last = dates[dates.length - 1];
+    var curMon = mondayOf(last), win = null, m = curMon;
+    while (m >= first) {
+      var sun = addDays(m, 6);
+      var texts = weekDates(m).map(function (d) { return (state.entries[d] && state.entries[d].text) || ''; });
+      if (isPast(sun) && texts.some(function (t) { return t.trim(); })) { win = { mon: m, sun: sun, texts: texts }; break; }
+      m = addDays(m, -7);
+    }
+    if (win) {
+      renderWindowSummary({ label: fmtCN(win.mon) + ' ～ ' + fmtCN(win.sun) + '（第' + weekNum(win.mon) + '周）', dates: weekDates(win.mon), maxPoints: 6 });
+      return;
+    }
+    var curTexts = weekDates(curMon).map(function (d) { return (state.entries[d] && state.entries[d].text) || ''; });
+    var have = curTexts.filter(function (t) { return t.trim(); }).length;
+    var p = document.createElement('p'); p.className = 'empty';
+    p.textContent = '本周（' + fmtCN(curMon) + ' ～ ' + fmtCN(addDays(curMon, 6)) + '）已写 ' + have + '/7 天。本周结束后会自动生成周总结。';
+    body.appendChild(p);
+  }
+  function renderSummaryMonth() {
+    var body = els.summaryBody; body.innerHTML = '';
+    var dates = entryDates();
+    if (!dates.length) { var p0 = document.createElement('p'); p0.className = 'empty'; p0.textContent = '写下这个月的日记后，这里会在每月结束后自动生成月总结。'; body.appendChild(p0); return; }
+    var first = dates[0], last = dates[dates.length - 1];
+    var curKey = monthKey(last), win = null, key = curKey;
+    while (key >= monthKey(first)) {
+      var ds = monthDates(key);
+      var texts = ds.map(function (d) { return (state.entries[d] && state.entries[d].text) || ''; });
+      if (isPast(ds[ds.length - 1]) && texts.some(function (t) { return t.trim(); })) { win = { key: key, dates: ds, texts: texts }; break; }
+      key = prevMonthKey(key);
+    }
+    if (win) { renderWindowSummary({ label: monthLabelCN(win.key), dates: win.dates, maxPoints: 8 }); return; }
+    var curDates = monthDates(curKey);
+    var have = curDates.filter(hasText).length;
+    var p = document.createElement('p'); p.className = 'empty';
+    p.textContent = '本月（' + monthLabelCN(curKey) + '）已写 ' + have + '/' + curDates.length + ' 天。本月结束后会自动生成月总结。';
+    body.appendChild(p);
+  }
+  function renderWindowSummary(win) {
+    var body = els.summaryBody; body.innerHTML = '';
+    var texts = win.dates.map(function (d) { return (state.entries[d] && state.entries[d].text) || ''; });
+    var sm = generateSummary(texts, win.maxPoints || 5);
+    var head = document.createElement('div'); head.className = 'summary-head';
+    var span = document.createElement('span'); span.textContent = win.label;
+    head.appendChild(span); body.appendChild(head);
+    var ol = document.createElement('ol'); ol.className = 'points';
+    (sm.points.length ? sm.points : ['内容太短，无法提取关键点。']).forEach(function (pt) {
+      var li = document.createElement('li'); li.textContent = pt; ol.appendChild(li);
+    });
+    body.appendChild(ol);
+    if (sm.freq.length) {
+      var kw = document.createElement('div'); kw.className = 'kw';
+      var lab = document.createElement('span'); lab.className = 'label'; lab.textContent = '高频词';
+      kw.appendChild(lab);
+      sm.freq.forEach(function (k) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = k; kw.appendChild(chip); });
+      body.appendChild(kw);
+    }
+  }
+  function renderSummaryAll() {
+    var body = els.summaryBody; body.innerHTML = '';
+    if (myRole !== 'owner' && myRole !== 'admin') { renderSummary3d(); return; }
+    api('stats', { token: sessionToken(), day: todayStr() }).then(function (r) {
+      if (r.error) {
+        var pe = document.createElement('p'); pe.className = 'empty'; pe.textContent = '加载失败：' + r.error;
+        body.appendChild(pe); return;
+      }
+      var users = Object.keys(r.users || {});
+      if (!users.length) {
+        var p0 = document.createElement('p'); p0.className = 'empty';
+        p0.textContent = '今天还没有人写日记。大家写完后，这里会自动汇总今天共同提到的话题（仅主人/管理员可见）。';
+        body.appendChild(p0); return;
+      }
+      var pairCount = {}, topicCount = {}, sentCount = {};
+      var pairUsers = {}, topicUsers = {}, sentUsers = {};
+      users.forEach(function (u) {
+        var c = r.users[u] || {};
+        (c.pairs || []).forEach(function (pr) { var k = pr.join('|'); pairCount[k] = (pairCount[k] || 0) + 1; (pairUsers[k] = pairUsers[k] || []).push(u); });
+        (c.topics || []).forEach(function (tp) { topicCount[tp] = (topicCount[tp] || 0) + 1; (topicUsers[tp] = topicUsers[tp] || []).push(u); });
+        (c.sents || []).forEach(function (se) { sentCount[se] = (sentCount[se] || 0) + 1; (sentUsers[se] = sentUsers[se] || []).push(u); });
+      });
+      var head = document.createElement('div'); head.className = 'summary-head';
+      var span = document.createElement('span'); span.textContent = '📊 今天共 ' + users.length + ' 人写了日记';
+      head.appendChild(span); body.appendChild(head);
+      var ol = document.createElement('ol'); ol.className = 'points';
+      var shown = false, pairTopics = {}, pairSents = {};
+      Object.keys(pairCount).sort(function (a, b) { return pairCount[b] - pairCount[a]; }).forEach(function (k) {
+        if (pairCount[k] < 2) return;
+        var pr = k.split('|'); pairTopics[pr[0]] = true; pairSents[pr[1]] = true;
+        var li = document.createElement('li');
+        li.textContent = (pairUsers[k] || []).join('、') + '（' + pairCount[k] + ' 人）感觉「' + pr[0] + '」' + pr[1];
+        ol.appendChild(li); shown = true;
+      });
+      Object.keys(topicCount).sort(function (a, b) { return topicCount[b] - topicCount[a]; }).forEach(function (tp) {
+        if (topicCount[tp] < 2 || pairTopics[tp]) return;
+        var li = document.createElement('li'); li.textContent = (topicUsers[tp] || []).join('、') + '（' + topicCount[tp] + ' 人）提到「' + tp + '」';
+        ol.appendChild(li); shown = true;
+      });
+      Object.keys(sentCount).sort(function (a, b) { return sentCount[b] - sentCount[a]; }).forEach(function (se) {
+        if (sentCount[se] < 2 || pairSents[se]) return;
+        var li = document.createElement('li'); li.textContent = (sentUsers[se] || []).join('、') + '（' + sentCount[se] + ' 人）今天感觉「' + se + '」';
+        ol.appendChild(li); shown = true;
+      });
+      if (!shown) { var li0 = document.createElement('li'); li0.textContent = '今天还没有多人共同提到的话题。'; ol.appendChild(li0); }
+      body.appendChild(ol);
+      var note = document.createElement('p'); note.className = 'empty';
+      note.textContent = '仅主人和管理员可见：展示话题和用户名，不展示任何人的日记内容。';
+      body.appendChild(note);
+    });
+  }
+
+  var KEYWORDS = ['完成', '重要', '关键', '问题', '解决', '学习', '收获', '计划', '目标', '决定', '明天', '下一步', '感谢', '遗憾', '开始', '终于', '发现', '总结', '进展', '开心', '难过', '注意', '需要', '必须', '成功', '失败', '教训', '坚持', '突破', '改变', '提醒', '安排', '见到', '朋友', '家人', '工作', '项目', '读书', '运动', '习惯', '错误', '改进', '希望', '达成'];
+  var SENTIMENT = new Set(['好喝', '好吃', '好看', '好玩', '好用', '好听', '喜欢', '开心', '快乐', '高兴', '难过', '伤心', '讨厌', '生气', '感动', '舒服', '难受', '不错', '很棒', '很好', '太棒', '幸福', '痛苦', '害怕', '紧张', '轻松', '疲惫', '努力', '加油', '满意', '失望', '惊喜', '无语', '郁闷', '烦躁', '焦虑', '平静', '温暖', '甜蜜', '美味', '可爱', '漂亮', '大方', '聪明', '厉害', '优秀', '积极', '消极', '顺利', '困难', '麻烦', '无聊', '孤单', '热闹', '安静', '充实', '空虚']);
+  var STOP_BG = new Set(['我们', '你们', '他们', '今天', '明天', '昨天', '一个', '一些', '自己', '这个', '那个', '什么', '因为', '所以', '但是', '然后', '还是', '就是', '可以', '没有', '有点', '觉得', '知道', '应该', '已经', '时候', '这么', '那么', '如果', '虽然', '而且', '或者', '非常', '比较', '真的', '一下', '现在', '以后', '这样', '那样', '那里', '这里', '一天', '开始', '后来', '最后', '还有', '以及', '可是', '不过', '于是', '接着', '其次', '另外', '比如', '例如', '可能', '也许', '大概', '似乎', '好像', '几乎', '马上', '立刻', '当然', '果然', '终于', '难道', '到底', '毕竟', '其实', '基本上', '是不是', '很快', '感觉', '想想', '看看', '起来', '出来', '下来', '过去', '回来', '进去', '出去']);
+  function splitSentences(text) {
+    return text.replace(/\r\n/g, '\n').split(/[。！？!?；;\n]+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 4; });
+  }
+  function scoreSentence(s, idx) {
+    var score = 0;
+    for (var i = 0; i < KEYWORDS.length; i++) if (s.indexOf(KEYWORDS[i]) >= 0) score += 1.5;
+    var len = s.length;
+    if (len < 8) score -= 1.2;
+    if (len > 70) score -= 0.8;
+    score += Math.min(len / 25, 1.5) * 0.4;
+    if (idx === 0) score += 0.5;
+    return score;
+  }
+  function generateSummary(texts, maxPoints) {
+    maxPoints = maxPoints || 5;
+    var sentences = [];
+    texts.forEach(function (t, idx) {
+      if (!t) return;
+      splitSentences(t).forEach(function (s) { sentences.push({ s: s, idx: idx, score: scoreSentence(s, idx) }); });
+    });
+    sentences.sort(function (a, b) { return b.score - a.score; });
+    var picked = [], seen = {};
+    for (var i = 0; i < sentences.length && picked.length < maxPoints; i++) {
+      var key = sentences[i].s.slice(0, 12);
+      if (seen[key]) continue;
+      seen[key] = true; picked.push(sentences[i]);
+    }
+    picked.sort(function (a, b) { return a.idx - b.idx; });
+    return { points: picked.map(function (p) { return p.s; }), freq: topFreq(texts.join('\n')) };
+  }
+  function topFreq(text) {
+    var clean = text.replace(/[\s，。！？、；：""''（）()《》【】\d\w]/g, '');
+    var freq = {}; var chars = clean.split('');
+    for (var i = 0; i < chars.length - 1; i++) {
+      var bg = chars[i] + chars[i + 1];
+      if (STOP_BG.has(bg)) continue;
+      freq[bg] = (freq[bg] || 0) + 1;
+    }
+    return Object.keys(freq).map(function (k) { return { k: k, n: freq[k] }; })
+      .filter(function (o) { return o.n >= 2; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 8).map(function (o) { return o.k; });
+  }
+  function extractContribution(text) {
+    var clean = String(text).replace(/[\s，。！？、；：""''（）()《》【】\d\w~～·…—…！？!?,.;:'"\-]/g, '');
+    var freq = {}; var chars = clean.split('');
+    for (var i = 0; i < chars.length - 1; i++) {
+      var bg = chars[i] + chars[i + 1];
+      if (STOP_BG.has(bg)) continue;
+      freq[bg] = (freq[bg] || 0) + 1;
+    }
+    var sents = [], topics = [];
+    Object.keys(freq).forEach(function (bg) { if (SENTIMENT.has(bg)) sents.push(bg); else topics.push(bg); });
+    topics = topics.slice(0, 6); sents = sents.slice(0, 4);
+    var pairs = [];
+    for (var a = 0; a < topics.length; a++) for (var b = 0; b < sents.length; b++) pairs.push([topics[a], sents[b]]);
+    return { topics: topics, sents: sents, pairs: pairs };
+  }
+
+  /* ---------- 统计 / 日历 / 历史 ---------- */
+  function renderStats() {
+    var dates = entryDates();
+    els.statTotal.textContent = dates.length;
+    var words = 0;
+    dates.forEach(function (d) { words += state.entries[d].text.trim().length; });
+    els.statWords.textContent = words;
+    els.statStreak.textContent = streak(dates);
+  }
+  function streak(dates) {
+    var set = {}; dates.forEach(function (d) { set[d] = true; });
+    var d = todayStr(); if (!set[d]) d = addDays(d, -1);
+    var n = 0; while (set[d]) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function renderCalendar() {
+    if (calYear === null || calMonth === null) { var now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth(); }
+    els.calTitle.textContent = calYear + ' 年 ' + (calMonth + 1) + ' 月';
+    var grid = els.calendar; grid.innerHTML = '';
+    ['一', '二', '三', '四', '五', '六', '日'].forEach(function (w) {
+      var h = document.createElement('div'); h.className = 'cal-cell cal-head-cell'; h.textContent = w; grid.appendChild(h);
+    });
+    var first = new Date(calYear, calMonth, 1);
+    var startDow = (first.getDay() + 6) % 7;
+    for (var i = 0; i < startDow; i++) { var b = document.createElement('div'); b.className = 'cal-cell blank'; grid.appendChild(b); }
+    var days = new Date(calYear, calMonth + 1, 0).getDate();
+    var today = todayStr();
+    for (var d = 1; d <= days; d++) {
+      var ds = calYear + '-' + pad(calMonth + 1) + '-' + pad(d);
+      var cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      if (ds === today) cell.className += ' today';
+      if (hasText(ds)) cell.className += ' has-entry';
+      var num = document.createElement('span'); num.className = 'cal-num'; num.textContent = d; cell.appendChild(num);
+      if (hasText(ds)) { var dot = document.createElement('span'); dot.className = 'cal-dot'; cell.appendChild(dot); }
+      (function (ds2) { cell.addEventListener('click', function () { saveNow(); currentDate = ds2; renderAll(); }); })(ds);
+      grid.appendChild(cell);
+    }
+  }
+  function renderHistory() {
+    var dates = entryDates().reverse();
+    var list = els.historyList; list.innerHTML = '';
+    if (!dates.length) { var li = document.createElement('li'); li.className = 'empty-li'; li.textContent = '还没有日记，写下第一篇吧！'; list.appendChild(li); return; }
+    dates.forEach(function (d) {
+      var e = state.entries[d];
+      var li = document.createElement('li'); li.className = 'hist-item';
+      var dateSpan = document.createElement('span'); dateSpan.className = 'hist-date';
+      dateSpan.textContent = (e.mood || '') + ' ' + fmtCN(d);
+      var prev = document.createElement('span'); prev.className = 'hist-preview';
+      prev.textContent = e.text.replace(/\s+/g, ' ').slice(0, 46);
+      li.appendChild(dateSpan); li.appendChild(prev);
+      li.addEventListener('click', function () { saveNow(); currentDate = d; renderAll(); });
+      list.appendChild(li);
+    });
+  }
+
+  /* ---------- 账号管理（仅主人） ---------- */
+  function updateSummaryTabs() {
+    var isOwner = myRole === 'owner';
+    var isAdmin = myRole === 'owner' || myRole === 'admin';
+    els.manageBtn.style.display = isOwner ? '' : 'none';
+    var btns = els.summaryTabs.children;
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i].getAttribute('data-tab') === 'all') {
+        btns[i].style.display = isAdmin ? '' : 'none';
+        if (!isAdmin && summaryTab === 'all') { summaryTab = '3d'; setActiveTab(); }
+      }
+    }
+    setActiveTab();
+  }
+  function setActiveTab() {
+    var btns = els.summaryTabs.children;
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].className = 'tab' + ((btns[i].getAttribute('data-tab') || '3d') === summaryTab ? ' active' : '');
+    }
+  }
+  function showManageModal() {
+    renderManagePanel(); els.manageModal.style.display = 'flex';
+  }
+  function hideManageModal() { els.manageModal.style.display = 'none'; }
+  function renderManagePanel() {
+    api('users', { token: sessionToken() }).then(function (r) {
+      if (r.error) { els.ownerNameLine.textContent = r.error; return; }
+      els.ownerNameLine.textContent = '当前主人：' + r.owner;
+      els.adminSlotsLine.textContent = '管理员名额：' + (r.admins || []).length + ' / ' + MAX_ADMINS;
+      els.accountList.innerHTML = '';
+      Object.keys(r.users).forEach(function (name) {
+        var role = r.users[name];
+        var row = document.createElement('div'); row.className = 'account-row';
+        var who = document.createElement('span'); who.className = 'who';
+        var roleTxt = role === 'owner' ? '👑 主人' : (role === 'admin' ? '🛡️ 管理员' : '');
+        who.textContent = (roleTxt ? roleTxt + ' ' : '') + name + (name === currentUser ? '（我）' : '');
+        row.appendChild(who);
+        var actions = document.createElement('span'); actions.className = 'account-actions';
+        if (role !== 'owner') {
+          if (role === 'admin') {
+            var rmBtn = document.createElement('button'); rmBtn.className = 'mini-btn'; rmBtn.textContent = '移除管理员';
+            rmBtn.addEventListener('click', function () { api('removeadmin', { token: sessionToken(), username: name }).then(renderManagePanel); });
+            actions.appendChild(rmBtn);
+          } else if ((r.admins || []).length < MAX_ADMINS) {
+            var addBtn = document.createElement('button'); addBtn.className = 'mini-btn'; addBtn.textContent = '设为管理员';
+            addBtn.addEventListener('click', function () { api('setadmin', { token: sessionToken(), username: name }).then(renderManagePanel); });
+            actions.appendChild(addBtn);
+          } else {
+            var full = document.createElement('span'); full.className = 'label'; full.textContent = '名额已满';
+            actions.appendChild(full);
+          }
+          var ownBtn = document.createElement('button'); ownBtn.className = 'mini-btn'; ownBtn.textContent = '设为主人';
+          ownBtn.addEventListener('click', function () {
+            if (confirm('确定把主人身份转给「' + name + '」？')) {
+              api('transfer', { token: sessionToken(), username: name }).then(function (res) { if (res.error) alert(res.error); else { myRole = 'user'; renderManagePanel(); updateSummaryTabs(); } });
+            }
+          });
+          actions.appendChild(ownBtn);
+        }
+        if (actions.children.length) row.appendChild(actions);
+        els.accountList.appendChild(row);
+      });
+    });
+  }
+
+  /* ---------- init ---------- */
+  function init() {
+    ['authScreen', 'authForm', 'authName', 'authPass', 'authPass2', 'authPass2Wrap', 'rememberCheck', 'authError', 'authSubmit', 'authTabs', 'appRoot', 'currentUser', 'manageBtn', 'logoutBtn', 'manageModal', 'manageClose', 'ownerNameLine', 'adminSlotsLine', 'accountList', 'dateInput', 'entryText', 'saveBtn', 'clearBtn', 'deleteBtn', 'calPrev', 'calNext', 'yesterdayFill', 'saveTip', 'wordCount', 'yesterdayBody', 'summaryBody', 'summaryTabs', 'calendar', 'calTitle', 'historyList', 'statStreak', 'statTotal', 'statWords', 'navYesterday', 'navHistory', 'navSummary', 'secYesterday', 'secHistory', 'secSummary'].forEach(function (id) { els[id] = $(id); });
+
+    var rem = loadRemember();
+    if (rem.name) els.authName.value = rem.name;
+    if (rem.on && rem.pass) { els.authPass.value = rem.pass; els.rememberCheck.checked = true; }
+    // 默认模式：有记住的用户名时默认登录，否则默认注册
+    setAuthMode(rem.name ? 'login' : 'register');
+
+    els.authForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (authMode === 'register') doRegister(); else doLogin();
+    });
+    var authTabBtns = els.authTabs.children;
+    for (var i = 0; i < authTabBtns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          setAuthMode(btn.getAttribute('data-mode') === 'register' ? 'register' : 'login');
+        });
+      })(authTabBtns[i]);
+    }
+    els.logoutBtn.addEventListener('click', logout);
+    els.manageBtn.addEventListener('click', showManageModal);
+    els.manageClose.addEventListener('click', hideManageModal);
+
+    function setSection(sec) {
+      els.secYesterday.style.display = sec === 'yesterday' ? '' : 'none';
+      els.secHistory.style.display = sec === 'history' ? '' : 'none';
+      els.secSummary.style.display = sec === 'summary' ? '' : 'none';
+      els.navYesterday.className = 'nav-btn' + (sec === 'yesterday' ? ' active' : '');
+      els.navHistory.className = 'nav-btn' + (sec === 'history' ? ' active' : '');
+      els.navSummary.className = 'nav-btn' + (sec === 'summary' ? ' active' : '');
+    }
+    els.navYesterday.addEventListener('click', function () { setSection('yesterday'); });
+    els.navHistory.addEventListener('click', function () { setSection('history'); });
+    els.navSummary.addEventListener('click', function () { setSection('summary'); });
+
+    els.dateInput.addEventListener('change', function () { saveNow(); currentDate = els.dateInput.value || todayStr(); renderAll(); });
+    els.entryText.addEventListener('input', scheduleSave);
+    els.saveBtn.addEventListener('click', function () { saveNow(); flashTip('已保存 ✓'); });
+    els.clearBtn.addEventListener('click', function () { if (confirm('清空当前日期的内容？')) { els.entryText.value = ''; saveNow(); flashTip('已清空'); } });
+    els.deleteBtn.addEventListener('click', function () {
+      if (confirm('删除 ' + currentDate + ' 的日记？')) {
+        delete state.entries[currentDate];
+        api('del', { token: sessionToken(), day: currentDate });
+        renderAll(); flashTip('已删除');
+      }
+    });
+    els.yesterdayFill.addEventListener('click', function () { saveNow(); currentDate = addDays(currentDate, -1); renderAll(); });
+    els.calPrev.addEventListener('click', function () { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
+    els.calNext.addEventListener('click', function () { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+    var tabBtns = els.summaryTabs.children;
+    for (var i = 0; i < tabBtns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          summaryTab = btn.getAttribute('data-tab') || '3d';
+          setActiveTab(); renderSummary();
+        });
+      })(tabBtns[i]);
+    }
+    showAuth();
+    renderAll();
+  }
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
